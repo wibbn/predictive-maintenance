@@ -50,9 +50,8 @@ class LSTM(pl.LightningModule):
         x, y = batch
         y_hat = self(x)
         loss = self.criterion(y_hat, y)
-        result = pl.TrainResult(loss)
-        result.log('train_loss', loss)
-        return result
+        self.log('train_loss', loss)
+        return loss
 
     def validation_step(self,
                         batch: Tensor,
@@ -61,9 +60,8 @@ class LSTM(pl.LightningModule):
         x, y = batch
         y_hat = self(x)
         loss = self.criterion(y_hat, y)
-        result = pl.EvalResult(checkpoint_on=loss)
-        result.log('val_loss', loss)
-        return result
+        self.log('val_loss', loss)
+        return loss
 
     def test_step(self,
                   batch: Tensor,
@@ -72,6 +70,5 @@ class LSTM(pl.LightningModule):
         x, y = batch
         y_hat = self(x)
         loss = self.criterion(y_hat, y)
-        result = pl.EvalResult()
-        result.log('test_loss', loss)
-        return result
+        self.log('test_loss', loss)
+        return loss

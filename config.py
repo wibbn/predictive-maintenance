@@ -13,9 +13,9 @@ class DataArguments:
     seq_len: int = 24
     batch_size: int = 2
     telemetry_path: Path = Path('./data/PdM_telemetry.csv')
-    num_workers: int = 4
+    num_workers: int = 8
     val_ratio: float = 0.1
-    n_features: int = 7
+    n_features: int = 1
     hidden_size: int = 100
     num_layers: int = 1
 
@@ -23,5 +23,5 @@ class DataArguments:
 class TrainArguments:
     criterion: MSELoss = MSELoss()
     learning_rate: float = 3e-4
-    max_epochs: int = 2
+    max_epochs: int = 8
     dropout: float = 0

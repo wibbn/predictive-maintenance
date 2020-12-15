@@ -23,7 +23,9 @@ def main(args):
 
     logger = NeptuneLogger(api_key=os.environ.get("NEPTUNE_API_TOKEN"),
                            project_name="wibbn/predictive-maintenance",
-                           params=vars(args)
+                           params=vars(args),
+                           experiment_name="lstm_logs",
+                           save_dir="./logs/lstm",
                            )
     trainer = Trainer(max_epochs=args.max_epochs,
                       logger=logger,
@@ -37,11 +39,12 @@ def main(args):
                  criterion=args.criterion,
                  num_layers=args.num_layers,
                  dropout=args.dropout,
-                 learning_rate=args.learning_rate
+                 learning_rate=args.learning_rate,
                  )
     dm = TelemetryDataModule(path=args.telemetry_path,
                              seq_len=args.seq_len,
-                             batch_size=args.batch_size
+                             batch_size=args.batch_size,
+                             num_workers=args.num_workers,
                              )
 
     trainer.fit(model, dm)

@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
@@ -40,19 +41,20 @@ class TelemetryDataModule(pl.LightningDataModule):
             return
 
         df = pd.read_csv(self.path,
-                         names=['datetime', 'vibration', 'machineID'],
+                         usecols=['datetime', 'vibration', 'machineID'],
                          parse_dates=True,
                          infer_datetime_format=True,
                          low_memory=False,
                          error_bad_lines=False,
-                         index_col='datetime'
+                         index_col='datetime',
+                        #  dtype={'vibration': np.float}
         )
-        df_resample = df.resample('h').mean()
+
+        df_one = df[df['machineID'] == 1].drop(columns=['machineID'])
+        df_resample = df_one.astype(float).resample('h').mean()
 
         X = df_resample.dropna().copy()
-        y = X['vibration'].shift(-1).ffill()
-
-        X = X[X['machineID'] == 1].drop(columns=['machineID'])
+        y = X.shift(-1).ffill()
 
         self.columns = X.columns
 

@@ -9,6 +9,7 @@ class LSTM(pl.LightningModule):
                  n_features,
                  hidden_size,
                  seq_len,
+                 out_seq_len,
                  batch_size,
                  num_layers,
                  dropout,
@@ -19,6 +20,7 @@ class LSTM(pl.LightningModule):
         self.n_features = n_features
         self.hidden_size = hidden_size
         self.seq_len = seq_len
+        self.out_seq_len = out_seq_len
         self.batch_size = batch_size
         self.num_layers = num_layers
         self.dropout = dropout
@@ -28,16 +30,15 @@ class LSTM(pl.LightningModule):
         self.lstm = nn.LSTM(input_size=n_features, hidden_size=hidden_size,
                             num_layers=num_layers, dropout=dropout, batch_first=True)
 
-        self.linear = nn.Linear(hidden_size, 1)
-
-        # self.hidden_cell = (torch.zeros(1, 1, self.hidden_layer_size),
-        #                     torch.zeros(1, 1, self.hidden_layer_size))
+        self.linear = nn.Linear(hidden_size, self.out_seq_len)
 
     def forward(self,
                 x: Tensor
                 ) -> Tensor:
+
         lstm_out, _ = self.lstm(x)
         y_pred = self.linear(lstm_out[:, -1])
+
         return y_pred
 
     def configure_optimizers(self):
@@ -48,6 +49,7 @@ class LSTM(pl.LightningModule):
                       batch_idx: int
                       ) -> Tensor:
         x, y = batch
+        y.squeeze_(2)
         y_hat = self(x)
         loss = self.criterion(y_hat, y)
         self.log('train_loss', loss)
@@ -58,6 +60,7 @@ class LSTM(pl.LightningModule):
                         batch_idx: int
                         ) -> Tensor:
         x, y = batch
+        y.squeeze_(2)
         y_hat = self(x)
         loss = self.criterion(y_hat, y)
         self.log('val_loss', loss)
@@ -68,6 +71,7 @@ class LSTM(pl.LightningModule):
                   batch_idx: int
                   ) -> Tensor:
         x, y = batch
+        y.squeeze_(2)
         y_hat = self(x)
         loss = self.criterion(y_hat, y)
         self.log('test_loss', loss)

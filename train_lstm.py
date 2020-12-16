@@ -25,7 +25,6 @@ def main(args):
                            project_name="wibbn/predictive-maintenance",
                            params=vars(args),
                            experiment_name="lstm_logs",
-                           save_dir="./logs/lstm",
                            )
     trainer = Trainer(max_epochs=args.max_epochs,
                       logger=logger,
@@ -35,6 +34,7 @@ def main(args):
     model = LSTM(n_features=args.n_features,
                  hidden_size=args.hidden_size,
                  seq_len=args.seq_len,
+                 out_seq_len=args.out_seq_len,
                  batch_size=args.batch_size,
                  criterion=args.criterion,
                  num_layers=args.num_layers,
@@ -43,12 +43,15 @@ def main(args):
                  )
     dm = TelemetryDataModule(path=args.telemetry_path,
                              seq_len=args.seq_len,
+                             out_seq_len=args.out_seq_len,
                              batch_size=args.batch_size,
                              num_workers=args.num_workers,
                              )
 
     trainer.fit(model, dm)
     trainer.test(model, datamodule=dm)
+    model.save_hyperparameters()
+    trainer.save_checkpoint(args.checkpoint_path)
 
 if __name__ == "__main__":
     parser = ArgumentParser()

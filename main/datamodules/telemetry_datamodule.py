@@ -12,20 +12,26 @@ class TelemetryDataModule(pl.LightningDataModule):
     def __init__(self,
                  path: str,
                  seq_len: int = 1,
+                 out_seq_len: int = 1,
                  batch_size: int = 128,
-                 num_workers: int = 0
+                 num_workers: int = 0,
+                 machine_id: int = 1,
                  ):
         super().__init__()
         self.path = path
         self.seq_len = seq_len
+        self.out_seq_len = out_seq_len
         self.batch_size = batch_size
         self.num_workers = num_workers
+        self.machine_id = machine_id
         self.X_train = None
         self.y_train = None
         self.X_val = None
         self.y_val = None
         self.X_test = None
         self.X_test = None
+        self.X_prod = None
+        self.y_prod = None
         self.columns = None
         self.preprocessing = None
 
@@ -47,14 +53,13 @@ class TelemetryDataModule(pl.LightningDataModule):
                          low_memory=False,
                          error_bad_lines=False,
                          index_col='datetime',
-                        #  dtype={'vibration': np.float}
         )
 
-        df_one = df[df['machineID'] == 1].drop(columns=['machineID'])
+        df_one = df[df['machineID'] == self.machine_id].drop_duplicates().drop(columns=['machineID'])
         df_resample = df_one.astype(float).resample('h').mean()
 
         X = df_resample.dropna().copy()
-        y = X.shift(-1).ffill()
+        y = X.shift(-self.out_seq_len).ffill()
 
         self.columns = X.columns
 
@@ -74,10 +79,16 @@ class TelemetryDataModule(pl.LightningDataModule):
             self.X_test = preprocessing.transform(X_test)
             self.y_test = y_test.values.reshape((-1, 1))
 
+        if stage == 'prodaction':
+            self.X_prod = preprocessing.transform(X)
+            self.y_prod = y.values.reshape((-1, 1))
+
     def train_dataloader(self):
         train_dataset = TelemetryDataset(self.X_train, 
                                           self.y_train, 
-                                          seq_len=self.seq_len)
+                                          seq_len=self.seq_len,
+                                          out_seq_len=self.out_seq_len
+                                          )
         train_loader = DataLoader(train_dataset, 
                                   batch_size = self.batch_size, 
                                   shuffle = False, 
@@ -88,7 +99,9 @@ class TelemetryDataModule(pl.LightningDataModule):
     def val_dataloader(self):
         val_dataset = TelemetryDataset(self.X_val, 
                                         self.y_val, 
-                                        seq_len=self.seq_len)
+                                        seq_len=self.seq_len,
+                                        out_seq_len=self.out_seq_len
+                                        )
         val_loader = DataLoader(val_dataset, 
                                 batch_size = self.batch_size, 
                                 shuffle = False, 
@@ -99,10 +112,25 @@ class TelemetryDataModule(pl.LightningDataModule):
     def test_dataloader(self):
         test_dataset = TelemetryDataset(self.X_test, 
                                          self.y_test, 
-                                         seq_len=self.seq_len)
+                                         seq_len=self.seq_len,
+                                         out_seq_len=self.out_seq_len
+                                         )
         test_loader = DataLoader(test_dataset, 
                                  batch_size = self.batch_size, 
                                  shuffle = False, 
                                  num_workers = self.num_workers)
 
         return test_loader
+
+    def prodaction_dataset(self):
+        prod_dataset = TelemetryDataset(self.X_prod, 
+                                         self.y_prod, 
+                                         seq_len=self.seq_len,
+                                         out_seq_len=self.out_seq_len
+                                         )
+        prod_loader = DataLoader(prod_dataset, 
+                                 batch_size = self.batch_size, 
+                                 shuffle = False, 
+                                 num_workers = self.num_workers)
+
+        return prod_loader

@@ -8,7 +8,7 @@ def main():
         name=package_name,
         version='0.0.1',
         author='wibbn',
-        description='Equipment Condition Prediction',
+        description='Predictive Maintenance',
         package_dir={package_name: package_name},
         packages=packages,
         classifiers=[

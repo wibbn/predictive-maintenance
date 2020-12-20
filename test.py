@@ -15,23 +15,6 @@ from config import (
 
 
 def main(args):
-    # load models
-    lstm = LSTM.load_from_checkpoint(checkpoint_path=args.checkpoint_path + '/lstm.ckpt',
-                                     n_features=args.n_features,
-                                     hidden_size=args.hidden_size,
-                                     seq_len=args.seq_len,
-                                     out_seq_len=args.out_seq_len,
-                                     batch_size=args.batch_size,
-                                     criterion=args.criterion,
-                                     num_layers=args.num_layers,
-                                     dropout=args.dropout,
-                                     learning_rate=args.learning_rate,
-                                     )
-    lstm.freeze()
-    
-    gbm = CatBoostClassifier()
-    gbm.load_model(args.checkpoint_path + '/gbm.cbm')
-
     # get data
     X, y = get_gbm_database(args.telemetry_path,
                             args.maint_path,
@@ -51,6 +34,23 @@ def main(args):
                              num_workers=args.num_workers,)
     dm.setup(stage="prodaction")
     X_lstm = dm.prodaction_dataset()
+    
+    # load models
+    lstm = LSTM.load_from_checkpoint(checkpoint_path=args.checkpoint_path + '/lstm.ckpt',
+                                     n_features=args.n_features,
+                                     hidden_size=args.hidden_size,
+                                     seq_len=args.seq_len,
+                                     out_seq_len=args.out_seq_len,
+                                     batch_size=X_gbm.shape[0],
+                                     criterion=args.criterion,
+                                     num_layers=args.num_layers,
+                                     dropout=args.dropout,
+                                     learning_rate=args.learning_rate,
+                                     )
+    lstm.freeze()
+    
+    gbm = CatBoostClassifier()
+    gbm.load_model(args.checkpoint_path + '/gbm.cbm')
 
     # prediction
     y_hat_lstm = None
